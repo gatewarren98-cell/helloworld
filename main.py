@@ -238,3 +238,64 @@ class ApexToolPlugin(Star):
         except Exception as e:
             logger.error(f"猎杀查询异常: {e}")
             yield event.plain_result("❌ 猎杀数据解析失败，请稍后再试。")
+# ==========================
+    # 功能五：EA 服务器状态 (带多地区检测)
+    # ==========================
+    @filter.command("apex服务器")
+    async def query_apex_servers(self, event: AstrMessageEvent):
+        url = "https://api.mozambiquehe.re/servers"
+        params = {"auth": ALS_API_KEY}
+        
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, params=params, ssl=False) as response:
+                    # 同样强制解析 JSON
+                    data = await response.json(content_type=None)
+
+            # 辅助逻辑：优先检查亚洲区，如果亚洲区没数据则检查全局
+            def check_service(service_name):
+                service = data.get(service_name, {})
+                asia = service.get("Asia", {})
+                status = asia.get("Status", "UNKNOWN")
+                
+                if status == "UP":
+                    return "🟢 正常"
+                elif status == "SLOW":
+                    return "🟡 缓慢"
+                elif status == "DOWN":
+                    return "🔴 离线"
+                else:
+                    # 如果 Asia 没数据，遍历所有地区看看有没有 DOWN 的
+                    for reg, info in service.items():
+                        if info.get("Status") != "UP":
+                            return "🔴 异常"
+                    return "🟢 正常"
+
+            # 提取核心服务
+            origin_login = check_service("Origin_login")
+            ea_accounts = check_service("EA_accounts")
+            novafusion = check_service("EA_novafusion")
+            crossplay = check_service("ApexOauth_Crossplay")
+            
+            # 提取第三方平台状态
+            other = data.get("otherPlatforms", {})
+            psn = "🟢" if other.get("Playstation-Network", {}).get("Status") == "UP" else "🔴"
+            xbox = "🟢" if other.get("Xbox-Live", {}).get("Status") == "UP" else "🔴"
+
+            msg = (
+                f"📡 𝗘𝗔 官方服务器状态 (亚洲区)\n"
+                f"━━━━━━━━━━━━━━━\n"
+                f"🔑 账户登录: {origin_login}\n"
+                f"👤 账号关联: {ea_accounts}\n"
+                f"⚔️ 核心匹配: {novafusion}\n"
+                f"🔄 跨平台连接: {crossplay}\n"
+                f"━━━━━━━━━━━━━━━\n"
+                f"🎮 平台网络: PSN {psn} | Xbox {xbox}\n"
+                f"━━━━━━━━━━━━━━━\n"
+                f"💡 若核心匹配显示异常，游戏中可能会出现无法连接服务器或无限转圈。"
+            )
+            yield event.plain_result(msg)
+            
+        except Exception as e:
+            logger.error(f"服务器查询异常: {e}")
+            yield event.plain_result("❌ 无法获取服务器实时状态，请稍后再试。")
