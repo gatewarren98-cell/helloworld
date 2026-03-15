@@ -5,7 +5,7 @@ from astrbot.api import logger
 from astrbot.api.message_components import Image
 
 # ！！请务必在此处填入你申请的 ALS API Key ！！
-ALS_API_KEY = "YOUR_API_KEY_HERE"
+ALS_API_KEY = "b7bc7443be72109d3c31e3fc85d3183f"
 
 @register("apex_query", "开发者", "Apex全功能极速查询插件", "1.1.0")
 class ApexQueryPlugin(Star):
