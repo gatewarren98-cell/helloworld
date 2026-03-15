@@ -104,6 +104,7 @@ class ApexQueryPlugin(Star):
 
         try:
             async with aiohttp.ClientSession() as session:
+                # 使用 ssl=False 忽略老旧系统的证书问题
                 async with session.get(url, ssl=False) as response:
                     data = await response.json()
                     if "Error" in data:
@@ -124,12 +125,16 @@ class ApexQueryPlugin(Star):
 
             # 截图并使用最新 V4 语法发送图片
             image_path = await self._render_to_image(html_content, "#apex-card")
-            yield event.make_result().message(Image.fromFileSystem(image_path))
+            
+            res = event.make_result()
+            res.chain.append(Image.fromFileSystem(image_path))
+            yield res
+            
             os.remove(image_path)  # 发送后清理临时图片
 
         except Exception as e:
             logger.error(f"Apex查询异常: {e}")
-            yield event.plain_result("❌ 插件运行异常，请检查日志。")
+            yield event.plain_result("❌ 插件运行异常，请检查后台日志。")
 
     # ==========================
     # 功能二：地图轮换查询
@@ -162,21 +167,25 @@ class ApexQueryPlugin(Star):
                 ranked_next=ranked.get("next", {}).get("map", "未知")
             )
 
-            # 截图并使用最新 V4 语法发送图片
+            # 截图并使用最新 V4 语法发送图片 (wait_network 保证地图大图加载)
             image_path = await self._render_to_image(html_content, "#map-card", wait_network=True)
-            yield event.make_result().message(Image.fromFileSystem(image_path))
+            
+            res = event.make_result()
+            res.chain.append(Image.fromFileSystem(image_path))
+            yield res
+            
             os.remove(image_path)
 
         except Exception as e:
             logger.error(f"地图查询异常: {e}")
-            yield event.plain_result("❌ 地图获取异常，请检查日志。")
+            yield event.plain_result("❌ 地图获取异常，请检查后台日志。")
 
     # ==========================
     # 辅助函数：调用无头浏览器截图
     # ==========================
     async def _render_to_image(self, html_content: str, selector: str, wait_network=False) -> str:
         async with async_playwright() as p:
-            # 增加参数以适配 Docker 环境
+            # 增加参数以适配 Docker 环境，禁用沙盒
             browser = await p.chromium.launch(args=['--no-sandbox', '--disable-setuid-sandbox'])
             page = await browser.new_page()
             
