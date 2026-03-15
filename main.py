@@ -214,18 +214,27 @@ class ApexToolPlugin(Star):
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(url, params=params, ssl=False) as response:
-                    data = await response.json()
-                    pc = data.get("RP", {}).get("PC", {})
+                    # 关键修复：添加 content_type=None 强制解析
+                    data = await response.json(content_type=None)
+                    
+                    rp_data = data.get("RP", {})
+                    pc = rp_data.get("PC", {})
+                    ps4 = rp_data.get("PS4", {})
+                    x1 = rp_data.get("X1", {})
+                    sw = rp_data.get("SWITCH", {})
             
             msg = (
-                f"👹 𝗔𝗣𝗘𝗫 PC端猎杀门槛\n"
+                f"👹 𝗔𝗣𝗘𝗫 全平台猎杀底分\n"
                 f"━━━━━━━━━━━━━━━\n"
-                f"➤ 猎杀底分: {pc.get('val', '未知')} RP\n"
-                f"➤ 大师总数: {pc.get('totalMastersAndPreds', '未知')} 人\n"
-                f"━━━━━━━━━━━━━━━"
+                f"💻 PC端: {pc.get('val', '未知')} RP ({pc.get('totalMastersAndPreds', 0)}大师)\n"
+                f"🎮 PS端: {ps4.get('val', '未知')} RP ({ps4.get('totalMastersAndPreds', 0)}大师)\n"
+                f"🎮 Xbox: {x1.get('val', '未知')} RP ({x1.get('totalMastersAndPreds', 0)}大师)\n"
+                f"🍄 SW端: {sw.get('val', '未知')} RP ({sw.get('totalMastersAndPreds', 0)}大师)\n"
+                f"━━━━━━━━━━━━━━━\n"
+                f"💡 包含全服前750名及大师段位统计"
             )
             yield event.plain_result(msg)
             
         except Exception as e:
             logger.error(f"猎杀查询异常: {e}")
-            yield event.plain_result("❌ 数据获取异常，请稍后再试。")
+            yield event.plain_result("❌ 猎杀数据解析失败，请稍后再试。")
