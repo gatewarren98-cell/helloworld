@@ -10,7 +10,7 @@ from astrbot.api import logger
 from astrbot.api.message_components import Image  # 引入 AstrBot 的图片组件
 
 # ！！请务必在此处填入你申请的 ALS API Key ！！
-ALS_API_KEY = "YOUR_API_KEY_HERE"
+ALS_API_KEY = "b7bc7443be72109d3c31e3fc85d3183f"
 
 # ==========================================
 # HTML / CSS 模板定义
