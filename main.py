@@ -7,7 +7,7 @@ from playwright.async_api import async_playwright
 from astrbot.api.event import filter, AstrMessageEvent
 from astrbot.api.star import Context, Star, register
 from astrbot.api import logger
-from astrbot.api.message_components import Image  # 引入 AstrBot 的图片组件
+from astrbot.api.message_components import Image
 
 # ！！请务必在此处填入你申请的 ALS API Key ！！
 ALS_API_KEY = "b7bc7443be72109d3c31e3fc85d3183f"
@@ -122,9 +122,9 @@ class ApexQueryPlugin(Star):
                 rank_score=rank_data.get("rankScore", 0)
             )
 
-            # 截图并发送
+            # 截图并使用最新 V4 语法发送图片
             image_path = await self._render_to_image(html_content, "#apex-card")
-            yield event.chain([Image.fromFileSystem(image_path)])
+            yield event.make_result().message(Image.fromFileSystem(image_path))
             os.remove(image_path)  # 发送后清理临时图片
 
         except Exception as e:
@@ -162,9 +162,9 @@ class ApexQueryPlugin(Star):
                 ranked_next=ranked.get("next", {}).get("map", "未知")
             )
 
-            # 截图并发送 (传入 wait_until 保证背景大图加载完毕)
+            # 截图并使用最新 V4 语法发送图片
             image_path = await self._render_to_image(html_content, "#map-card", wait_network=True)
-            yield event.chain([Image.fromFileSystem(image_path)])
+            yield event.make_result().message(Image.fromFileSystem(image_path))
             os.remove(image_path)
 
         except Exception as e:
